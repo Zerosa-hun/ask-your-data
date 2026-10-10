@@ -14,14 +14,21 @@ from google.genai import types as genai_types
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-AUTH_DB = os.path.join(BASE_DIR, "auth.db")          # user accounts
-USER_DIR = os.path.join(BASE_DIR, "user_data")        # one data file per user
+DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)  # on a server, point this at a persistent disk
+AUTH_DB = os.path.join(DATA_DIR, "auth.db")          # user accounts
+USER_DIR = os.path.join(DATA_DIR, "user_data")        # one data file per user
 
 app = Flask(__name__)
 # Signs the login cookie. If not set, a new random key is created each time the app starts,
 # which just means everyone has to log in again after a restart.
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
+# Cookie settings for a public site. Lax stops other websites from using a logged-in
+# session to submit forms here (for example, deleting a dataset). Secure makes the
+# cookie HTTPS-only; set COOKIE_SECURE=1 on the server, but not on your own computer.
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE") == "1"
 
 # Sign-up needs this invite code. If it isn't set, new accounts can't be created.
 SIGNUP_CODE = os.environ.get("SIGNUP_CODE", "")
@@ -158,6 +165,25 @@ def build_suggestions(tables: list[str]) -> tuple[list[str], str]:
 
 PUBLIC_ENDPOINTS = {"login", "register", "static"}
 
+# Blocks guessing passwords: after 5 failed logins from one address, that address
+# waits 15 minutes. Kept in memory, so it resets when the server restarts.
+MAX_FAILED_LOGINS = 5
+LOCKOUT_SECONDS = 15 * 60
+failed_logins: dict[str, list[float]] = {}
+
+
+def client_ip() -> str:
+    # Hosting services add the real visitor address to the end of X-Forwarded-For.
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    return forwarded.split(",")[-1].strip() or (request.remote_addr or "unknown")
+
+
+def too_many_failed_logins(ip: str) -> bool:
+    now = time.time()
+    recent = [t for t in failed_logins.get(ip, []) if now - t < LOCKOUT_SECONDS]
+    failed_logins[ip] = recent
+    return len(recent) >= MAX_FAILED_LOGINS
+
 
 @app.before_request
 def require_login():
@@ -188,6 +214,13 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+        ip = client_ip()
+        if too_many_failed_logins(ip):
+            return render_template(
+                "login.html",
+                error="Too many failed attempts. Wait 15 minutes and try again.",
+                signup_open=bool(SIGNUP_CODE),
+            ), 429
         conn = auth_conn()
         try:
             row = conn.execute(
@@ -196,8 +229,10 @@ def login():
         finally:
             conn.close()
         if row and check_password_hash(row[2], password):
+            failed_logins.pop(ip, None)
             start_session(row[0], row[1])
             return redirect(safe_next(request.args.get("next", "")))
+        failed_logins.setdefault(ip, []).append(time.time())
         error = "Wrong username or password."
 
     return render_template("login.html", error=error, signup_open=bool(SIGNUP_CODE))
@@ -446,12 +481,17 @@ Mention the most important number or comparison. Use only the figures shown abov
 Do not use markdown or bullet points."""
 
     client = genai.Client(api_key=api_key)
-    for attempt in range(3):
+    # Short answer and few retries: the insight is a bonus, so if Google is busy
+    # we fall back to the plain summary quickly instead of making the user wait.
+    for attempt in range(2):
         try:
             response = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=prompt,
-                config=genai_types.GenerateContentConfig(temperature=0.3),
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=150,
+                ),
             )
             return (response.text or "").strip()
         except Exception as exc:
@@ -459,7 +499,7 @@ Do not use markdown or bullet points."""
             busy = "503" in message or "UNAVAILABLE" in message or "429" in message
             if not busy:
                 return ""
-            time.sleep(3 * (2 ** attempt))
+            time.sleep(3)
     return ""
 
 
@@ -652,4 +692,4 @@ init_storage()
 if __name__ == "__main__":
     # host="0.0.0.0" lets other devices on your Wi-Fi reach the app.
     # debug is off because the debug console would be exposed to the network.
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)
