@@ -38,6 +38,10 @@
     }
     .link-btn:hover { color: var(--primary-dark); }
     .export-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .section-title {
+      margin: 18px 0 8px; font-size: 15px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
@@ -113,8 +117,11 @@
           <div class="big-number" id="big"></div>
           <div class="caption" id="caption"></div>
         </div>
+        <h3 class="section-title">Summary</h3>
         <p class="summary" id="summary"></p>
+        <h3 class="section-title" id="chart-heading" hidden>Chart</h3>
         <canvas id="chart" hidden></canvas>
+        <h3 class="section-title">Data</h3>
         <div class="table-wrap"><table id="rows"></table></div>
         <p class="sql" id="sql"></p>
         <div class="export-actions">
@@ -290,6 +297,7 @@
       if (chart) { chart.destroy(); chart = null; }
       if (data.chart && data.chart !== "table" && data.datasets.length) {
         canvas.hidden = false;
+        document.getElementById("chart-heading").hidden = false;
         const isPie = data.chart === "pie";
         chart = new Chart(canvas, {
           type: data.chart,
@@ -310,6 +318,7 @@
         });
       } else {
         canvas.hidden = true;
+        document.getElementById("chart-heading").hidden = true;
       }
       // The chart download only makes sense when a chart is showing.
       dlChart.hidden = canvas.hidden;
