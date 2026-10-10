@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Ask Your Data
+    </a>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">Log out</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+
+    <h1>Your data</h1>
+    <p class="subtitle">Upload a CSV file, then pick a dataset to ask questions about it.</p>
+
+    <section class="card">
+      <h2 style="margin-top:0;">1. Upload data</h2>
+      <p class="subtitle" style="margin-bottom:12px;">The first row of the file must contain column names.</p>
+      <form class="upload-row" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" required>
+        <button class="btn btn-success" type="submit">Upload</button>
+      </form>
+    </section>
+
+    <h2>2. Choose a dataset</h2>
+    {% if tables %}
+      {% for t in tables %}
+        <div class="dataset">
+          <span class="dataset-name">{{ t }}</span>
+          <div class="dataset-actions">
+            <a class="btn btn-small" href="{{ url_for('ask_page', table=t) }}">Ask questions &rarr;</a>
+            <form action="{{ url_for('delete_table', name=t) }}" method="post"
+                  onsubmit="return confirm('Delete {{ t }} and all its data? This cannot be undone.');">
+              <button class="btn btn-danger btn-small" type="submit">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No datasets yet. Upload a CSV above to get started.</div>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ name }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #222; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin: 16px 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+    .controls label { display: flex; flex-direction: column; font-size: 14px; color: #555; }
+    select { padding: 8px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; min-width: 150px; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 6px; text-align: left; }
+    #error { color: #b91c1c; }
+    #summary { font-size: 17px; }
+    canvas { max-height: 400px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <p><a href="{{ url_for('index') }}">&larr; All datasets</a></p>
+  <h1>{{ name }}</h1>
+  <p>{{ total }} rows. Showing the first {{ preview|length }}.</p>
+
+  <div class="card">
+    <h2>Build a chart</h2>
+    <div class="controls">
+      <label>Group by
+        <select id="label">
+          {% for c in columns %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Calculate
+        <select id="agg">
+          <option value="sum">Sum</option>
+          <option value="avg">Average</option>
+          <option value="count">Count of rows</option>
+        </select>
+      </label>
+      <label>Of column
+        <select id="value">
+          {% for c in numeric %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Chart
+        <select id="chart">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+        </select>
+      </label>
+      <button id="draw">Draw</button>
+    </div>
+    <p id="error"></p>
+    <p id="summary"></p>
+    <canvas id="chartCanvas" hidden></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Data preview</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr>
+        {% for row in preview %}
+          <tr>{% for c in columns %}<td>{{ row[c] }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const TABLE = {{ name|tojson }};
+    const labelSel = document.getElementById("label");
+    const aggSel = document.getElementById("agg");
+    const valueSel = document.getElementById("value");
+    const chartSel = document.getElementById("chart");
+    const errorEl = document.getElementById("error");
+    const summaryEl = document.getElementById("summary");
+    const canvas = document.getElementById("chartCanvas");
+    let chart = null;
+
+    async function draw() {
+      errorEl.textContent = "";
+      summaryEl.textContent = "";
+      const params = new URLSearchParams({
+        table: TABLE,
+        label: labelSel.value,
+        agg: aggSel.value,
+        value: valueSel.value,
+        chart: chartSel.value
+      });
+      const res = await fetch("/api/chart?" + params.toString());
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        canvas.hidden = true;
+        if (chart) { chart.destroy(); chart = null; }
+        errorEl.textContent = data.error || "Something went wrong.";
+        return;
+      }
+
+      summaryEl.textContent = data.summary;
+      canvas.hidden = false;
+      if (chart) chart.destroy();
+      chart = new Chart(canvas, {
+        type: data.chart,
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: aggSel.options[aggSel.selectedIndex].text + " of " + (valueSel.value || "rows"),
+            data: data.values,
+            backgroundColor: ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2", "#db2777"],
+            borderColor: "#2563eb",
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: data.chart === "pie" } }
+        }
+      });
+    }
+
+    document.getElementById("draw").addEventListener("click", draw);
+    draw();
+  </script>
+</body>
+</html>

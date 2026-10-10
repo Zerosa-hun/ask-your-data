@@ -1,0 +1,9 @@
+# Secrets and private data: never commit these
+.env
+auth.db
+data.db
+user_data/
+
+# Python and local files
+__pycache__/
+venv/

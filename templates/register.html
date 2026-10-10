@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account · Ask Your Data</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #f7f8fc; color: #1f2937;
+      display: flex; align-items: center; justify-content: center; padding: 28px;
+    }
+    .box { width: 100%; max-width: 400px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kicker { color: #4f5fd6; letter-spacing: 0.12em; font-size: 12px; font-weight: 700; margin: 0 0 10px; }
+    h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; color: #0f1a3a; }
+    .sub { color: #6b7280; margin: 0 0 24px; font-size: 15px; }
+    .sub a { color: #4f5fd6; }
+    form { display: flex; flex-direction: column; gap: 16px; }
+    label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: #374151; }
+    input {
+      height: 48px; padding: 0 14px; font: inherit; font-size: 16px; font-weight: 400;
+      border: 1px solid #d7dce8; border-radius: 10px; background: #fff; color: #111827;
+    }
+    input:focus { outline: none; border-color: #4f5fd6; box-shadow: 0 0 0 3px rgba(79, 95, 214, 0.15); }
+    button {
+      margin-top: 6px; height: 50px; border: none; border-radius: 10px;
+      background: #14204a; color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    button:hover { background: #1c2a5e; }
+    .error {
+      background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;
+      border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px;
+    }
+    .hint { color: #6b7280; font-size: 13px; font-weight: 400; }
+  </style>
+</head>
+<body>
+  <main class="box">
+    <p class="kicker">CREATE ACCOUNT</p>
+    {% if closed %}
+      <h1>Sign-up is closed</h1>
+      <p class="sub">Ask the administrator for an invite code, or <a href="{{ url_for('login') }}">log in</a> if you already have an account.</p>
+    {% else %}
+      <h1>Join Ask Your Data</h1>
+      <p class="sub">You need an invite code from the administrator. Already have an account? <a href="{{ url_for('login') }}">Log in</a>.</p>
+
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+      <form method="post">
+        <label>Invite code
+          <input name="code" autocomplete="off" required autofocus>
+        </label>
+        <label>Username
+          <span class="hint">3 to 30 letters, numbers, dots, dashes or underscores</span>
+          <input name="username" autocomplete="username" required>
+        </label>
+        <label>Password
+          <span class="hint">At least 8 characters</span>
+          <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <button type="submit">Create account &rarr;</button>
+      </form>
+    {% endif %}
+  </main>
+</body>
+</html>

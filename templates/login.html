@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in · Ask Your Data</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      color: #1f2937;
+    }
+
+    /* Left panel */
+    .left {
+      background:
+        radial-gradient(circle at 70% 20%, rgba(99, 102, 241, 0.25), transparent 45%),
+        #0f1a3a;
+      color: #fff;
+      padding: 44px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; }
+    .brand-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      display: grid; place-items: center;
+    }
+    .brand-icon svg { width: 22px; height: 22px; }
+    .eyebrow { color: #93a4ff; letter-spacing: 0.12em; font-size: 12px; font-weight: 600; margin: 56px 0 14px; }
+    .headline { font-size: 52px; line-height: 1.08; font-weight: 700; margin: 0 0 18px; letter-spacing: -0.02em; }
+    .lead { color: #b6c0dc; font-size: 17px; max-width: 420px; margin: 0; }
+
+    .preview {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px 22px;
+      max-width: 420px;
+      backdrop-filter: blur(6px);
+    }
+    .preview-top { display: flex; justify-content: space-between; align-items: center; color: #b6c0dc; font-size: 14px; }
+    .preview-value { font-size: 30px; font-weight: 700; margin: 4px 0 16px; }
+    .badge { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .bars { display: flex; align-items: flex-end; gap: 10px; height: 110px; }
+    .bar { flex: 1; border-radius: 6px; background: rgba(148, 163, 255, 0.3); }
+    .bar.active { background: #a5b4fc; box-shadow: 0 0 18px rgba(165, 180, 252, 0.6); }
+
+    .footnote { color: #7c88ad; font-size: 13px; }
+
+    /* Right panel */
+    .right {
+      background: #f7f8fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .form-box { width: 100%; max-width: 380px; }
+    .kicker { color: #4f5fd6; letter-spacing: 0.12em; font-size: 12px; font-weight: 700; margin: 0 0 10px; }
+    h1 { font-size: 34px; margin: 0 0 8px; letter-spacing: -0.02em; color: #0f1a3a; font-weight: 700; }
+    .sub { color: #6b7280; margin: 0 0 28px; font-size: 15px; }
+    .sub a { color: #4f5fd6; }
+
+    form { display: flex; flex-direction: column; gap: 18px; }
+    label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: #374151; }
+    input {
+      height: 50px;
+      padding: 0 14px;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 400;
+      border: 1px solid #d7dce8;
+      border-radius: 10px;
+      background: #fff;
+      color: #111827;
+    }
+    input:focus { outline: none; border-color: #4f5fd6; box-shadow: 0 0 0 3px rgba(79, 95, 214, 0.15); }
+
+    button {
+      margin-top: 8px;
+      height: 52px;
+      border: none;
+      border-radius: 10px;
+      background: #14204a;
+      color: #fff;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(20, 32, 74, 0.25);
+    }
+    button:hover { background: #1c2a5e; }
+
+    .error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 860px) {
+      body { grid-template-columns: 1fr; }
+      .left { padding: 28px; }
+      .headline { font-size: 36px; }
+      .eyebrow { margin-top: 28px; }
+      .right { padding: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="left">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        </div>
+        Ask Your Data
+      </div>
+
+      <p class="eyebrow">YOUR DATA, MADE CLEAR</p>
+      <h2 class="headline">Answers are closer than you think.</h2>
+      <p class="lead">Turn your datasets into clear charts and confident decisions, simply by asking.</p>
+    </div>
+
+    <div>
+      <div class="preview">
+        <div class="preview-top">
+          <span>Sample insight</span>
+          <span class="badge">+18.4%</span>
+        </div>
+        <div class="preview-value">2,418</div>
+        <div class="bars">
+          <div class="bar" style="height: 30%"></div>
+          <div class="bar" style="height: 45%"></div>
+          <div class="bar" style="height: 36%"></div>
+          <div class="bar" style="height: 55%"></div>
+          <div class="bar" style="height: 42%"></div>
+          <div class="bar" style="height: 62%"></div>
+          <div class="bar active" style="height: 90%"></div>
+        </div>
+      </div>
+      <p class="footnote" style="margin-top:24px;">Your data stays on your server.</p>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="form-box">
+      <p class="kicker">WELCOME BACK</p>
+      <h1>Log in to your account</h1>
+      <p class="sub">Enter your details to continue to your workspace.</p>
+
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+      <form method="post">
+        <label>Username
+          <input name="username" autocomplete="username" required autofocus>
+        </label>
+        <label>Password
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Log in &rarr;</button>
+      </form>
+      {% if signup_open %}
+        <p class="sub" style="margin-top:18px;">No account yet? <a href="{{ url_for('register') }}">Create one</a></p>
+      {% endif %}
+    </div>
+  </section>
+</body>
+</html>
