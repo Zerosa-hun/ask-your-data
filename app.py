@@ -12,6 +12,7 @@ from flask import (Flask, abort, flash, jsonify, redirect, render_template,
 from google import genai
 from google.genai import types as genai_types
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)  # on a server, point this at a persistent disk
@@ -37,6 +38,7 @@ NUMERIC_TYPES = {"INTEGER", "REAL", "NUMERIC", "FLOAT", "DOUBLE"}
 CHART_TYPES = {"bar", "line", "pie"}
 ALL_CHARTS = CHART_TYPES | {"table"}
 MAX_TABLES = 4  # how many datasets one question can combine
+FILES_TABLE = "stored_files"  # where non-CSV uploads are kept, inside each user's own database
 DATE_HINTS = ("date", "month", "year", "time", "day")
 # Words that would change or remove data, or attach other databases. Queries containing them are rejected.
 FORBIDDEN_SQL = re.compile(
@@ -100,7 +102,25 @@ def list_tables() -> list[str]:
         ).fetchall()
     finally:
         conn.close()
-    return [r[0] for r in rows]
+    # The stored-files table is not a dataset, so it is left out.
+    return [r[0] for r in rows if r[0] != FILES_TABLE]
+
+
+def list_stored_files() -> list[dict]:
+    """Non-CSV files the user has uploaded. Empty if none have been stored yet."""
+    conn = get_conn()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (FILES_TABLE,)
+        ).fetchone()
+        if not exists:
+            return []
+        rows = conn.execute(
+            f"SELECT id, name, size, uploaded_at FROM {FILES_TABLE} ORDER BY id DESC"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [{"id": r[0], "name": r[1], "size": r[2], "uploaded_at": r[3]} for r in rows]
 
 
 def get_columns(table: str) -> list[tuple[str, str]]:
@@ -286,7 +306,7 @@ def logout():
 
 @app.route("/")
 def index():
-    return render_template("index.html", tables=list_tables())
+    return render_template("index.html", tables=list_tables(), files=list_stored_files())
 
 
 @app.route("/ask")
@@ -338,8 +358,30 @@ def upload():
     if not file or not file.filename:
         flash("Please choose a file.")
         return redirect(url_for("index"))
-    if not file.filename.lower().endswith(".csv"):
-        flash("Only .csv files are supported.")
+
+    filename = os.path.basename(file.filename)
+    if not filename.lower().endswith(".csv"):
+        # Any other file type is stored as it is, so it can be downloaded later.
+        data = file.read()
+        conn = get_conn()
+        try:
+            conn.execute(
+                f"CREATE TABLE IF NOT EXISTS {FILES_TABLE} ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "name TEXT NOT NULL, "
+                "size INTEGER NOT NULL, "
+                "uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP, "
+                "data BLOB NOT NULL)"
+            )
+            conn.execute(
+                f"INSERT INTO {FILES_TABLE} (name, size, data) VALUES (?, ?, ?)",
+                (filename, len(data), sqlite3.Binary(data)),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        flash(f"Stored '{filename}'. Download it from the Stored files list. "
+              "Only CSV files can be used for questions.")
         return redirect(url_for("index"))
 
     try:
@@ -380,6 +422,45 @@ def delete_table(name):
         conn.close()
 
     flash(f"Deleted '{name}'.")
+    return redirect(url_for("index"))
+
+
+@app.route("/files/<int:file_id>")
+def download_file(file_id):
+    """Send a stored file back to its owner as a download."""
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            f"SELECT name, data FROM {FILES_TABLE} WHERE id = ?", (file_id,)
+        ).fetchone()
+    except sqlite3.OperationalError:  # no files stored yet
+        row = None
+    finally:
+        conn.close()
+    if not row:
+        abort(404)
+    download_name = secure_filename(row[0]) or "file"
+    return Response(
+        bytes(row[1]),
+        mimetype="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{download_name}"'},
+    )
+
+
+@app.route("/delete_file/<int:file_id>", methods=["POST"])
+def delete_file(file_id):
+    conn = get_conn()
+    try:
+        cur = conn.execute(f"DELETE FROM {FILES_TABLE} WHERE id = ?", (file_id,))
+        conn.commit()
+        deleted = cur.rowcount
+    except sqlite3.OperationalError:  # no files stored yet
+        deleted = 0
+    finally:
+        conn.close()
+    if not deleted:
+        abort(404)
+    flash("Stored file deleted.")
     return redirect(url_for("index"))
 
 
