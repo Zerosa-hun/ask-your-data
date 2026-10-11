@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ask about {{ name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Ask Your Data
+    </a>
+    <nav class="nav">
+      <a href="{{ url_for('index') }}">&larr; Datasets</a>
+      <a href="{{ url_for('logout') }}">Log out</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+
+    <h1>Ask about this file</h1>
+    <p class="subtitle">{{ name }}</p>
+
+    <section class="card">
+      <form method="post" action="{{ url_for('stored_file', file_id=file_id) }}" class="ask-form">
+        <input type="text" name="question" value="{{ question }}" placeholder="e.g. What is the refund policy?" autocomplete="off" required>
+        <button type="submit" class="btn">Ask</button>
+      </form>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      {% if answer %}
+        <h2>Answer</h2>
+        <p class="summary">{{ answer }}</p>
+        {% if truncated %}
+          <p class="subtitle" style="font-size:13px;">This file is long. Only the first part was used to answer.</p>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    <p class="subtitle" style="font-size:13px;">Answers come from the text in the file. Check important answers against the original.</p>
+  </main>
+</body>
+</html>
