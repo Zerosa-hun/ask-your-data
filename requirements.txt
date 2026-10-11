@@ -2,3 +2,5 @@ flask
 pandas
 google-genai
 gunicorn
+python-docx
+pypdf
