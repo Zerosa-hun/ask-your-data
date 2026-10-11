@@ -42,7 +42,7 @@ CHART_TYPES = {"bar", "line", "pie"}
 ALL_CHARTS = CHART_TYPES | {"table"}
 MAX_TABLES = 4  # how many datasets one question can combine
 FILES_TABLE = "stored_files"  # where non-CSV uploads are kept, inside each user's own database
-MAX_DOC_CHARS = 60000  # longest document text sent to Gemini in one question
+MAX_DOC_CHARS = 30000  # longest document text sent to Gemini in one question (shorter = faster answers)
 DATE_HINTS = ("date", "month", "year", "time", "day")
 # Words that would change or remove data, or attach other databases. Queries containing them are rejected.
 FORBIDDEN_SQL = re.compile(
@@ -821,12 +821,13 @@ Document:
 
     client = genai.Client(api_key=api_key)
     last_error = None
-    for attempt in range(4):
+    # Two tries only: waiting longer makes the page time out on the hosting service.
+    for attempt in range(2):
         try:
             response = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=prompt,
-                config=genai_types.GenerateContentConfig(temperature=0.2, max_output_tokens=800),
+                config=genai_types.GenerateContentConfig(temperature=0.2, max_output_tokens=500),
             )
             return (response.text or "").strip()
         except Exception as exc:
