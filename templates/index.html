@@ -60,6 +60,9 @@
             <span class="subtitle" style="font-size:13px; margin:0;">&middot; {{ "{:,.1f}".format(f.size / 1024) }} KB &middot; {{ f.uploaded_at }}</span>
           </span>
           <div class="dataset-actions">
+            {% if f.name.lower().endswith(('.pdf', '.docx')) %}
+              <a class="btn btn-small" href="{{ url_for('stored_file', file_id=f.id) }}">Ask questions &rarr;</a>
+            {% endif %}
             <a class="btn btn-small" href="{{ url_for('download_file', file_id=f.id) }}">Download</a>
             <form action="{{ url_for('delete_file', file_id=f.id) }}" method="post"
                   onsubmit="return confirm('Delete {{ f.name }}? This cannot be undone.');">
