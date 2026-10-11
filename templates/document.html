@@ -27,10 +27,12 @@
     <p class="subtitle">{{ name }}</p>
 
     <section class="card">
-      <form method="post" action="{{ url_for('stored_file', file_id=file_id) }}" class="ask-form">
+      <form method="post" action="{{ url_for('stored_file', file_id=file_id) }}" class="ask-form"
+            onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='Thinking...';">
         <input type="text" name="question" value="{{ question }}" placeholder="e.g. What is the refund policy?" autocomplete="off" required>
         <button type="submit" class="btn">Ask</button>
       </form>
+      <p class="subtitle" style="font-size:13px;">Answers can take up to a minute. Please wait for one answer before asking another.</p>
       {% if error %}<div class="error">{{ error }}</div>{% endif %}
       {% if answer %}
         <h2>Answer</h2>
