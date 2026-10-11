@@ -23,13 +23,13 @@
     {% endfor %}
 
     <h1>Your data</h1>
-    <p class="subtitle">Upload a CSV file, then pick a dataset to ask questions about it.</p>
+    <p class="subtitle">Upload any file. CSV files can be asked questions. Other files are stored for download.</p>
 
     <section class="card">
       <h2 style="margin-top:0;">1. Upload data</h2>
-      <p class="subtitle" style="margin-bottom:12px;">The first row of the file must contain column names.</p>
+      <p class="subtitle" style="margin-bottom:12px;">For questions, the first row of a CSV file must contain column names.</p>
       <form class="upload-row" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv" required>
+        <input type="file" name="file" required>
         <button class="btn btn-success" type="submit">Upload</button>
       </form>
     </section>
@@ -50,6 +50,26 @@
       {% endfor %}
     {% else %}
       <div class="empty">No datasets yet. Upload a CSV above to get started.</div>
+    {% endif %}
+
+    <h2>3. Stored files</h2>
+    {% if files %}
+      {% for f in files %}
+        <div class="dataset">
+          <span class="dataset-name">{{ f.name }}
+            <span class="subtitle" style="font-size:13px; margin:0;">&middot; {{ "{:,.1f}".format(f.size / 1024) }} KB &middot; {{ f.uploaded_at }}</span>
+          </span>
+          <div class="dataset-actions">
+            <a class="btn btn-small" href="{{ url_for('download_file', file_id=f.id) }}">Download</a>
+            <form action="{{ url_for('delete_file', file_id=f.id) }}" method="post"
+                  onsubmit="return confirm('Delete {{ f.name }}? This cannot be undone.');">
+              <button class="btn btn-danger btn-small" type="submit">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No stored files yet.</div>
     {% endif %}
   </main>
 </body>
